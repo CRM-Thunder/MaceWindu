@@ -58,6 +58,7 @@ jobs:
 
       - name: Run pip-audit (SCA)
         run: |
+          cd MaceWindu
           pip install pip-audit
           pip install -r requirements.txt
           pip-audit --format json | python -m json.tool > pip-audit.json
