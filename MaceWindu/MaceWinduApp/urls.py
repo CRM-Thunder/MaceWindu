@@ -21,7 +21,6 @@ urlpatterns=[
     path('profile/changePassword/',views.CustomPasswordChangeView.as_view(),name="password_change"),
     path('profile/deleteAccount',views.delete_account_view,name='delete_account'),
     path('analysisChoice/',views.analysis_choice_view,name="analysis_choice"),
-    path('ObservationPointAnalysis/',views.op_analysis_view,name="op_analysis"),
     path('forgotPassword/',CustomForgotPasswordEmailView.as_view(),name='forgot_password_email'),
     path('forgotPassword/sent/',CustomForgotPasswordEmailSentView.as_view(),name='forgot_password_email_sent'),
     path('forgotPassword/confirm/<uidb64>/<token>/',CustomForgotPasswordChangeView.as_view(),name='forgot_password_change'),

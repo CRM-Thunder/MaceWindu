@@ -4,11 +4,6 @@
     <h2 class="text-2xl font-semibold mb-6">Witaj, {{ user.username }}!</h2>
 
     <div class="flex flex-col gap-4">
-      <a href="{% url 'analysis_choice' %}"
-         class="bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 transition">
-         Dokonaj analizy
-      </a>
-
       <a href="{% url 'profile' %}"
          class="bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 transition">
          Profil użytkownika
