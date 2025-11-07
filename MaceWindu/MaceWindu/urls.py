@@ -15,7 +15,6 @@ Including another URLconf
 """
 from django.views.generic import RedirectView
 
-import MaceWinduApp
 from django.urls import include, path
 
 urlpatterns = [

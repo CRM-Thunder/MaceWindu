@@ -1,39 +1,26 @@
-from datetime import datetime
-
-from django.contrib.auth.models import User
-from django.contrib.auth.tokens import default_token_generator
-from django.contrib.auth.views import PasswordChangeView, PasswordResetView, PasswordResetDoneView, \
-    PasswordResetConfirmView, PasswordResetCompleteView
+from django.contrib.auth.views import PasswordChangeView
 from django.contrib.messages.views import SuccessMessageMixin
-from django.http import JsonResponse
+from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
-from django.contrib.sites.shortcuts import get_current_site
-from django.utils.http import urlsafe_base64_decode
-from .mailsender import send_verification_mail
-
 from .forms import CustomUserCreationForm, LoginForm, ObservationPointForm, UpdateUserUFLNameForm
-from .models import ObservationPoint, CustomUser
-from .services.weather_service import GoogleWeatherService, parse_weather_response
-
+from .models import ObservationPoint
 
 def register_view(request):
     if request.method == "POST":
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
-            user.is_active = False
+            user.is_active = True
             user.is_staff = False
             user.is_superuser = False
             user.save()
-            current_site = get_current_site(request)
-            send_verification_mail(user, current_site)
             messages.success(request,
-                             "Poprawnie zarejestrowano konto w systemie. Przed zalogowaniem zweryfikuj konto poprzez link wysłany na adres e-mail")
+                             "Poprawnie zarejestrowano konto w systemie.")
             return redirect("login")
         else:
             messages.error(request, "Wystąpiły błędy w formularzu.")
@@ -43,19 +30,7 @@ def register_view(request):
         return render(request, 'register.html', {'form': form})
 
 
-def activate_account_view(request, uid, token):
-    try:
-        uid = urlsafe_base64_decode(uid).decode()
-        user = CustomUser.objects.get(pk=uid)
-    except(TypeError, ValueError, OverflowError, User.DoesNotExist):
-        user = None
-    if user is not None and default_token_generator.check_token(user, token):
-        user.is_active = True
-        user.save()
-        messages.success(request, 'Konto zostało aktywowane. Możesz się teraz zalogować.')
-    else:
-        messages.error(request, "Link jest nieprawidłowy lub wygasł.")
-    return redirect('login')
+
 
 
 def login_view(request):
@@ -119,25 +94,6 @@ class CustomPasswordChangeView(SuccessMessageMixin, PasswordChangeView):
     success_message = "Hasło zostało zmienione pomyślnie"
 
 
-class CustomForgotPasswordEmailView(SuccessMessageMixin, PasswordResetView):
-    template_name = 'forgot_password_email_form.html'
-    email_template_name = 'email_templates/forgot_password_email.html'
-    subject_template_name = 'email_templates/forgot_password_subject.txt'
-    success_url = reverse_lazy('forgot_password_email_sent')
-
-
-class CustomForgotPasswordEmailSentView(PasswordResetDoneView):
-    template_name = 'forgot_password_email_sent.html'
-
-
-class CustomForgotPasswordChangeView(SuccessMessageMixin, PasswordResetConfirmView):
-    template_name = 'forgot_password_change_form.html'
-    success_url = reverse_lazy('forgot_password_complete')
-
-
-class CustomForgotPasswordCompleteView(PasswordResetCompleteView):
-    template_name = 'forgot_password_complete.html'
-
 
 @login_required
 def dashboard_view(request):
@@ -150,40 +106,7 @@ def analysis_choice_view(request):
     return render(request, 'analysis_choice.html', {'observation_points': observation_points})
 
 
-@login_required
-def op_analysis_view(request):
-    observation_point_id = request.GET.get('observation_point_id')
-    observation_point = get_object_or_404(ObservationPoint, pk=observation_point_id, user=request.user)
 
-    lat = float(observation_point.latitude)
-    lon = float(observation_point.longitude)
-
-    try:
-        data = GoogleWeatherService.get_hourly_history(lat, lon)
-        simplified_data = parse_weather_response(data)
-        print(simplified_data)
-
-
-    except Exception as e:
-        return JsonResponse(
-            {"error": "Nie udało się pobrać danych pogodowych", "details": str(e)},
-            status=500,
-        )
-
-    wiatry = []
-    for entry in simplified_data:
-        dt = entry['displayDateTime']
-        godzina = datetime(dt['year'], dt['month'], dt['day'], dt['hours'], dt['minutes'])
-        wiatry.append((godzina, entry['wind']))
-
-    wiatry.sort(key=lambda x: x[0])
-
-    tablica = [{'godzina': godz.strftime("%Y-%m-%d %H:%M"), 'wiatr': wiatr} for godz, wiatr in wiatry]
-    return render(request, 'op_analysis.html', {
-        "weather_data": tablica,
-        "observation_point": observation_point,
-        "price_per_kwh": observation_point.energyCostPerKWh
-    })
 
 
 @login_required
