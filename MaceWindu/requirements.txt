@@ -4,7 +4,7 @@ asgiref==3.10.0
 attrs==25.4.0
 Authlib==1.6.5
 Automat==25.4.16
-bandit==1.8.6
+bandit==1.9.2
 certifi==2025.10.5
 cffi==2.0.0
 charset-normalizer==3.4.4
